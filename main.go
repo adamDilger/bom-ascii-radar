@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bom_ascii/bom"
+	"bom-ascii-radar/bom"
 	"flag"
 	"fmt"
 	"os/exec"
@@ -91,7 +91,7 @@ func getRenderedImage(cache map[string]string, theImageName string, width int, h
 
 func imageToAscii(filename string, width, height int) (string, error) {
 	innerCmd := fmt.Sprintf(
-		"composite %s %s - | ascii-image-converter - -d %d,%d -C",
+		"composite %s %s - | ascii-image-converter - -d %d,%d -b -C",
 		*backgroundPath,
 		filename,
 		width,
