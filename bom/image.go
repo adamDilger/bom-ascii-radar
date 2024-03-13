@@ -80,6 +80,19 @@ func GetDateTimeForImagePath(path string) (time.Time, error) {
 	return time.Parse("200601021504", timestamp)
 }
 
+func DeleteImage(imageName string, cacheDir string) {
+	p := path.Join(cacheDir, imageName)
+	if !fileExists(p) {
+		slog.Debug("No cached image to delete", "url", p)
+		return
+	}
+
+	slog.Debug("deleting image", "url", p)
+	if err := os.Remove(p); err != nil {
+		slog.Debug("failed to delete image", "url", p)
+	}
+}
+
 func fileExists(p string) bool {
 	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist

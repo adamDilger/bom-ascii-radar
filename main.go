@@ -25,11 +25,6 @@ func main() {
 		panic("Failed to load timezone: " + err.Error())
 	}
 
-	imageNames, err := bom.FetchImageNames(*productCode)
-	if err != nil {
-		panic("Failed to fetch image names: " + err.Error())
-	}
-
 	cache := make(map[string]string)
 
 	width, height, err := term.GetSize(0)
@@ -44,7 +39,32 @@ func main() {
 	fmt.Print("\033[2J") // Clear screen
 	fmt.Print("\033[?25l")
 
+	lastRun := time.Now()
+
+	imageNames, err := bom.FetchImageNames(*productCode)
+	if err != nil {
+		panic("Failed to fetch image names: " + err.Error())
+	}
+
 	for {
+		if time.Since(lastRun) > 5*time.Minute {
+			// skip if hours are outside of 6am-6pm
+			if time.Now().Hour() < 7 || time.Now().Hour() > 18 {
+				fmt.Printf("\033[0;0H") // Set cursor position
+				fmt.Printf("Skipping radar fetch due to time %v\n", time.Now().Format("2006-01-02 15:04"))
+				time.Sleep(5 * time.Minute)
+				continue
+			}
+
+			imageNames, err = bom.FetchImageNames(*productCode)
+			if err != nil {
+				panic("Failed to fetch image names: " + err.Error())
+			}
+
+			lastRun = time.Now()
+			cleanupCache(imageNames, cache)
+		}
+
 		for _, theImageName := range imageNames {
 			ascii := getRenderedImage(cache, theImageName, width, height)
 
@@ -102,4 +122,23 @@ func imageToAscii(filename string, width, height int) (string, error) {
 
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+func cleanupCache(imageNames []string, cache map[string]string) {
+	// if found in cache, but not in imageNames, remove from cache
+	for _, cacheKey := range cache {
+		found := false
+
+		for _, imageName := range imageNames {
+			if cacheKey == imageName {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			delete(cache, cacheKey)
+			bom.DeleteImage(cacheKey, *cacheDir)
+		}
+	}
 }
