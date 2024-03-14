@@ -145,7 +145,7 @@ func imageToAscii(filename string, width, height int) (string, error) {
 
 func cleanupCache(imageNames []string, cache map[string]string) {
 	// if found in cache, but not in imageNames, remove from cache
-	for _, cacheKey := range cache {
+	for cacheKey := range cache {
 		found := false
 
 		for _, imageName := range imageNames {
