@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	productCode    = flag.String("productCode", "IDR763", "The product code to fetch images for")
-	cacheDir       = flag.String("cacheDir", "/tmp/radar", "The directory to store cached images")
-	timezone       = flag.String("timezone", "Australia/Hobart", "The timezone to use for the radar image timestamps")
-	backgroundPath = flag.String("backgroundPath", "./background.png", "The path to the background image")
+	productCode = flag.String("productCode", "IDR763", "The product code to fetch images for")
+	cacheDir    = flag.String("cacheDir", "/tmp/radar", "The directory to store cached images")
+	timezone    = flag.String("timezone", "Australia/Hobart", "The timezone to use for the radar image timestamps")
 
 	debug = flag.Bool("debug", false, "Enable debug logging")
 )
@@ -46,6 +45,11 @@ func main() {
 	fmt.Print("\033[2J") // Clear screen
 	fmt.Print("\033[?25l")
 
+	bgPath, err := bom.BuildBackgroundImage(*productCode, *cacheDir)
+	if err != nil {
+		panic("Failed to build background image: " + err.Error())
+	}
+
 	lastRun := time.Now()
 
 	imageNames, err := bom.FetchImageNames(*productCode)
@@ -73,7 +77,7 @@ func main() {
 		}
 
 		for i, theImageName := range imageNames {
-			ascii := getRenderedImage(cache, theImageName, width, height)
+			ascii := getRenderedImage(cache, theImageName, bgPath, width, height)
 
 			fmt.Printf("\033[0;0H") // Set cursor position
 			fmt.Printf("%v", ascii)
@@ -103,7 +107,7 @@ func main() {
 	}
 }
 
-func getRenderedImage(cache map[string]string, theImageName string, width int, height int) string {
+func getRenderedImage(cache map[string]string, theImageName, bgImagePath string, width int, height int) string {
 	if cachedAscii, ok := cache[theImageName]; ok {
 		return cachedAscii
 	}
@@ -117,7 +121,7 @@ func getRenderedImage(cache map[string]string, theImageName string, width int, h
 		panic(err)
 	}
 
-	ascii, err := imageToAscii(f, width, height)
+	ascii, err := imageToAscii(f, bgImagePath, width, height)
 	if err != nil {
 		fmt.Printf("Failed to convert image to ascii: %v", err)
 		panic(err)
@@ -128,10 +132,10 @@ func getRenderedImage(cache map[string]string, theImageName string, width int, h
 	return ascii
 }
 
-func imageToAscii(filename string, width, height int) (string, error) {
+func imageToAscii(filename, backgroundImagePath string, width, height int) (string, error) {
 	innerCmd := fmt.Sprintf(
 		"composite %s %s - | ascii-image-converter - -d %d,%d -b -C",
-		*backgroundPath,
+		backgroundImagePath,
 		filename,
 		width,
 		height,
