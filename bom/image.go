@@ -25,7 +25,7 @@ func GetRadarImagePath(opts FetchImageOptions) (string, error) {
 	name := opts.TheImageName
 	cacheDir := opts.CacheDir
 
-	slog.Debug("Fetching images for product code: ")
+	slog.Debug("Fetching image", "theImageName", name)
 
 	url := fmt.Sprintf(imgUrlFormat, name)
 

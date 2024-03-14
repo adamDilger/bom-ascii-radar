@@ -4,6 +4,7 @@ import (
 	"bom-ascii-radar/bom"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"time"
 
@@ -15,10 +16,16 @@ var (
 	cacheDir       = flag.String("cacheDir", "/tmp/radar", "The directory to store cached images")
 	timezone       = flag.String("timezone", "Australia/Hobart", "The timezone to use for the radar image timestamps")
 	backgroundPath = flag.String("backgroundPath", "./background.png", "The path to the background image")
+
+	debug = flag.Bool("debug", false, "Enable debug logging")
 )
 
 func main() {
 	flag.Parse()
+
+	if *debug {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
 
 	loc, err := time.LoadLocation(*timezone)
 	if err != nil {
@@ -65,7 +72,7 @@ func main() {
 			cleanupCache(imageNames, cache)
 		}
 
-		for _, theImageName := range imageNames {
+		for i, theImageName := range imageNames {
 			ascii := getRenderedImage(cache, theImageName, width, height)
 
 			fmt.Printf("\033[0;0H") // Set cursor position
@@ -76,6 +83,18 @@ func main() {
 
 			fmt.Printf("\033[%d;%dH", height, width-len(tsFormat)+1) // set cursor to bottom right
 			fmt.Print(timestamp.In(loc).Format(tsFormat))
+
+			stat := "["
+			for j := 0; j < len(imageNames); j++ {
+				if j == i {
+					stat += "|"
+				} else {
+					stat += "."
+				}
+			}
+			stat += "]"
+
+			fmt.Printf("\033[%d;%dH%s", height+1, width-len(stat)+1, stat)
 
 			time.Sleep(1 * time.Second)
 		}
@@ -137,6 +156,7 @@ func cleanupCache(imageNames []string, cache map[string]string) {
 		}
 
 		if !found {
+			slog.Debug("Removing image from cache", "image", cacheKey)
 			delete(cache, cacheKey)
 			bom.DeleteImage(cacheKey, *cacheDir)
 		}
