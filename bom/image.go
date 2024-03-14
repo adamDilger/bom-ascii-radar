@@ -66,7 +66,7 @@ func GetRadarImagePath(opts FetchImageOptions) (string, error) {
 	return p, nil
 }
 
-func BuildBackgroundImage(productCode, cacheDir string) (string, error) {
+func BuildBackgroundImage(productCode, cacheDir, backgroundColor string) (string, error) {
 	slog.Debug("Fetching background image", "productCode", productCode)
 
 	url := fmt.Sprintf(backgroundImgFormat, productCode)
@@ -99,11 +99,9 @@ func BuildBackgroundImage(productCode, cacheDir string) (string, error) {
 		return "", fmt.Errorf("failed to write image to cache: %v", err)
 	}
 
-	bg_color := "white"
-
 	cmd := exec.Command(
-		"magick", p,
-		"-fill", bg_color,
+		"convert", p,
+		"-fill", backgroundColor,
 		"-opaque", "#C08000",
 		"-opaque", "#E0D8B8",
 		"-fill", "transparent",

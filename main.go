@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	productCode = flag.String("productCode", "IDR763", "The product code to fetch images for")
-	cacheDir    = flag.String("cacheDir", "/tmp/radar", "The directory to store cached images")
-	timezone    = flag.String("timezone", "Australia/Hobart", "The timezone to use for the radar image timestamps")
+	productCode     = flag.String("productCode", "IDR763", "The product code to fetch images for")
+	cacheDir        = flag.String("cacheDir", "/tmp/radar", "The directory to store cached images")
+	timezone        = flag.String("timezone", "Australia/Hobart", "The timezone to use for the radar image timestamps")
+	backgroundColor = flag.String("backgroundColor", "#808080", "The background color to use for the radar image")
 
 	debug = flag.Bool("debug", false, "Enable debug logging")
 )
@@ -45,7 +46,7 @@ func main() {
 	fmt.Print("\033[2J") // Clear screen
 	fmt.Print("\033[?25l")
 
-	bgPath, err := bom.BuildBackgroundImage(*productCode, *cacheDir)
+	bgPath, err := bom.BuildBackgroundImage(*productCode, *cacheDir, *backgroundColor)
 	if err != nil {
 		panic("Failed to build background image: " + err.Error())
 	}
@@ -132,11 +133,13 @@ func getRenderedImage(cache map[string]string, theImageName, bgImagePath string,
 	return ascii
 }
 
+// composite /tmp/radar/ /tmp/radar - | ascii-image-converter - -b -C
+
 func imageToAscii(filename, backgroundImagePath string, width, height int) (string, error) {
 	innerCmd := fmt.Sprintf(
 		"composite %s %s - | ascii-image-converter - -d %d,%d -b -C",
-		backgroundImagePath,
 		filename,
+		backgroundImagePath,
 		width,
 		height,
 	)
